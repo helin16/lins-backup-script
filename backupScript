@@ -3,7 +3,7 @@
 
 #getting the current directory
 BASEDIR=$(dirname $0);
-HTML_ROOT=$1;
+SRC_DIR=$1;
 TAR_BALL_PREFIX=$2;
 MYSQL_USER=$3;
 MYSQL_PASS=$4;
@@ -14,7 +14,7 @@ BACKUP_FILE=$BASEDIR/files/$TAR_BALL_PREFIX/$TAR_BALL_PREFIX-$TODAY.tar.gz;
 
 #usage hint
 usage(){
-	echo "Usage: $0 HTML_ROOT_PATH TAR_BALL_PREFIX MYSQL_USER MYSQL_PASS MYSQL_DB"
+	echo "Usage: $0 FOLDER_YOU_WANT_TO_BACKUP TAR_BALL_PREFIX MYSQL_USER MYSQL_PASS MYSQL_DB"
 	exit 1
 }
 
@@ -44,6 +44,23 @@ dumpDB() {
 	return 0;
 }
 
+#backing up the files
+ryncFiles() {
+	local src_dir=$1;
+	local target_dir=$2;
+	echo;
+        echo === Dumping the database;
+	local command='rsync -avz';
+	if [[ -z "$3" ]]; then 
+		command+=' --exclude='$3;
+	fi
+	command+=' $src_dir/ $target_dir/';
+        echo ' >>>'$command;
+	$command;
+        echo == DONE;
+        return 0;
+}
+
 #creating the tar ball for the temp folder
 createTarBall() {
 	local folder=$1;
@@ -51,7 +68,6 @@ createTarBall() {
 	echo;
 	echo === Creating a new tarball from $folder to $tarball ... ;
 	createFolder $(dirname $tarball);
-	dumpDB 
 	echo '  >>>'tar czf $tarball $folder/;
 	tar czf $tarball $folder/;
 	echo === DONE;
@@ -60,7 +76,7 @@ createTarBall() {
 
 #start up the backup
 startUp() {
-	echo Start backing up folder: $HTML_ROOT with tar_ball_prefix: $TAR_BALL_PREFIX;
+	echo Start backing up folder: $SRC_DIR with tar_ball_prefix: $TAR_BALL_PREFIX;
 	echo;
 	echo === Prepare for backup;
 	#creating a backup folder
@@ -87,7 +103,8 @@ cleanUp() {
 [[ ! $# -eq 5 ]] && usage;
 #start
 startUp;
-dumpDB $MYSQL_DB $MYSQL_USER $MYSQL_PASS $BACKUP_FOLER/$TAR_BALL_PREFIX/mysql.sql;
+dumpDB $MYSQL_DB $MYSQL_USER $MYSQL_PASS $BACKUP_FOLER/$TAR_BALL_PREFIX/db.sql;
+ryncFiles $SRC_DIR $BACKUP_FOLER/$TAR_BALL_PREFIX/;
 #creating the tarball
 createTarBall $BACKUP_FOLER $BACKUP_FILE;
 #clear up all tmp files/folders
