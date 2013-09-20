@@ -3,22 +3,95 @@
 
 #getting the current directory
 BASEDIR=$(dirname $0);
+HTML_ROOT=$1;
+TAR_BALL_PREFIX=$2;
+MYSQL_USER=$3;
+MYSQL_PASS=$4;
+MYSQL_DB=$5;
 TODAY=`date +%Y-%m-%d`;
 BACKUP_FOLER=$BASEDIR/$TODAY;
+BACKUP_FILE=$BASEDIR/files/$TAR_BALL_PREFIX/$TAR_BALL_PREFIX-$TODAY.tar.gz;
 
+#usage hint
 usage(){
-	echo "Usage: $0 HTML_ROOT_PATH "
+	echo "Usage: $0 HTML_ROOT_PATH TAR_BALL_PREFIX MYSQL_USER MYSQL_PASS MYSQL_DB"
 	exit 1
 }
 
 #function to create a tmp backup folder
-createBackupFile() {
+createFolder() {
 	local backup_folder=$1;
 	if [ ! -d $backup_folder ] ; then
-		mkdir $backup_folder;	
+		echo '  >>>'Making a folder: $backup_folder ...;
+		echo '  >>>'mkdir $backup_folder;
+		mkdir $backup_folder;
+		echo '  >>>'DONE;
 	fi
 	return 0;
 }
 
-#creating a backup folder
-createBackupFile $BACKUP_FOLER;
+#backing up the database
+dumpDB() {
+	local mysql_db=$1;
+	local mysql_user=$2;
+	local mysql_pass=$3;
+	local mysql_file=$4;
+	echo;
+	echo === Dumping the database;
+	echo ' >>>'mysqldump -u$mysql_user -p$mysql_pass $mysql_db > $mysql_file;
+	mysqldump -u$mysql_user -p$mysql_pass $mysql_db > $mysql_file;
+	echo == DONE;
+	return 0;
+}
+
+#creating the tar ball for the temp folder
+createTarBall() {
+	local folder=$1;
+	local tarball=$2;
+	echo;
+	echo === Creating a new tarball from $folder to $tarball ... ;
+	createFolder $(dirname $tarball);
+	dumpDB 
+	echo '  >>>'tar czf $tarball $folder/;
+	tar czf $tarball $folder/;
+	echo === DONE;
+	return 0;
+}
+
+#start up the backup
+startUp() {
+	echo Start backing up folder: $HTML_ROOT with tar_ball_prefix: $TAR_BALL_PREFIX;
+	echo;
+	echo === Prepare for backup;
+	#creating a backup folder
+	createFolder $BACKUP_FOLER;
+	createFolder $BACKUP_FOLER/$TAR_BALL_PREFIX;
+	echo === DONE and start backing up;
+	return 0;
+}
+
+#clean up
+cleanUp() {
+	echo;
+	echo === CLEANING UP;
+	#clean up the tmp folder
+	if [ -d $BACKUP_FOLER ] ; then
+		echo Removing the tmp folder: $BACKUP_FOLER;
+		rm -rf $BACKUP_FOLER;
+	fi
+	echo === DONE;
+	return 0;
+}
+
+#checking usage
+[[ ! $# -eq 5 ]] && usage;
+#start
+startUp;
+dumpDB $MYSQL_DB $MYSQL_USER $MYSQL_PASS $BACKUP_FOLER/$TAR_BALL_PREFIX/mysql.sql;
+#creating the tarball
+createTarBall $BACKUP_FOLER $BACKUP_FILE;
+#clear up all tmp files/folders
+cleanUp;
+
+
+
