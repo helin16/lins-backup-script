@@ -8,9 +8,9 @@ TAR_BALL_PREFIX=$2;
 MYSQL_USER=$3;
 MYSQL_PASS=$4;
 MYSQL_DB=$5;
+EXPIRY_DAYS=60; # HOW many days we keep the backup files
 TODAY=`date +%Y-%m-%d`;
 BACKUP_FOLER=$BASEDIR/$TODAY;
-BACKUP_FILE=$BASEDIR/files/$TAR_BALL_PREFIX/$TAR_BALL_PREFIX-$TODAY.tar.gz;
 
 #usage hint
 usage(){
@@ -51,10 +51,10 @@ ryncFiles() {
 	echo;
         echo === Dumping the database;
 	local command='rsync -avz';
-	if [[ -z "$3" ]]; then 
+	if [ ! -z "$3" ]; then 
 		command+=' --exclude='$3;
 	fi
-	command+=' $src_dir/ $target_dir/';
+	command+=' '$src_dir'/ '$target_dir'/';
         echo ' >>>'$command;
 	$command;
         echo == DONE;
@@ -64,12 +64,17 @@ ryncFiles() {
 #creating the tar ball for the temp folder
 createTarBall() {
 	local folder=$1;
-	local tarball=$2;
+	local tarbll_folder=$BASEDIR/files/$TAR_BALL_PREFIX;
+	local tarball=$tarbll_folder/$TAR_BALL_PREFIX-$TODAY.tar.gz;
 	echo;
 	echo === Creating a new tarball from $folder to $tarball ... ;
 	createFolder $(dirname $tarball);
-	echo '  >>>'tar czf $tarball $folder/;
+	echo ' >>>'tar czf $tarball $folder/;
 	tar czf $tarball $folder/;
+
+	#deleting files that are more than 60 days
+        echo ' >>>Deleting tarballs older than: '$EXPIRY_DAYS' days';
+        echo ' >>>'find r -name \*.tar.gz -mtime +$EXPIRY_DAYS -type f -delete;
 	echo === DONE;
 	return 0;
 }
@@ -95,20 +100,35 @@ cleanUp() {
 		echo Removing the tmp folder: $BACKUP_FOLER;
 		rm -rf $BACKUP_FOLER;
 	fi
-	echo === DONE;
+	echo == DONE;
 	return 0;
+}
+
+#generating the md5 of each file under the source folder
+mkMD5() {
+	local md5_folder=$BASEDIR/md5/$TAR_BALL_PREFIX;
+	createFolder $md5_folder;
+	#generating
+	echo ' >>>Generating the md5:';
+	echo ' >>>find '$SRC_DIR -type f -print0 '| xargs -0 md5sum >' $md5_folder/$TAR_BALL_PREFIX-$TODAY.md5
+	find $SRC_DIR -type f -print0 | xargs -0 md5sum > $md5_folder/$TAR_BALL_PREFIX-$TODAY.md5;
+
+	#deleting files that are more than 60 days
+	echo ' >>>Deleting md5 files older than: '$EXPIRY_DAYS' days';
+	echo ' >>>'find $md5_folder -name \*.md5 -mtime +$EXPIRY_DAYS -type f -delete;
+	find $md5_folder -name \*.md5 -mtime +$EXPIRY_DAYS -type f -delete;
 }
 
 #checking usage
 [[ ! $# -eq 5 ]] && usage;
 #start
 startUp;
+#backup the database
 dumpDB $MYSQL_DB $MYSQL_USER $MYSQL_PASS $BACKUP_FOLER/$TAR_BALL_PREFIX/db.sql;
+#backup the files
 ryncFiles $SRC_DIR $BACKUP_FOLER/$TAR_BALL_PREFIX/;
 #creating the tarball
 createTarBall $BACKUP_FOLER $BACKUP_FILE;
 #clear up all tmp files/folders
 cleanUp;
-
-
-
+mkMD5;
