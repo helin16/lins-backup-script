@@ -1,53 +1,24 @@
 #!/bin/bash
 # backup script
-HTML_ROOT=~/public_html;
-BACKUP_ROOT_DIR=~/backup/files;
-FOLDER_NAME=`date +%Y-%m-%d`;
-BACKUP_FOLDER=$BACKUP_ROOT_DIR/$FOLDER_NAME;
-BACKUP_FILE=$FOLDER_NAME.tar.gz;
-MYSQL_USER="mylinsco";
-MYSQL_PASS="i1008323I!";
-MYSQL_BK="mylinsco_bookkeep";
-MYSQL_WP="mylinsco_wrd1";
-MYSQL_CLINIC="mylinsco_clinic"
 
-echo 'backuping files and DBs';
-if [ ! -f "$BACKUP_FILE" ] ; then
-	mkdir $BACKUP_FOLDER;   
+#getting the current directory
+BASEDIR=$(dirname $0);
+TODAY=`date +%Y-%m-%d`;
+BACKUP_FOLER=$BASEDIR/$TODAY;
 
-	BK_FOLDER=$BACKUP_FOLDER/bk;
-	WP_FOLDER=$BACKUP_FOLDER/wp;
+usage(){
+	echo "Usage: $0 HTML_ROOT_PATH "
+	exit 1
+}
 
-	mkdir $BK_FOLDER;
-	mkdir $WP_FOLDER;
-
-	mysqldump -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_BK > $BK_FOLDER/$MYSQL_BK.sql;
-	mysqldump -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_WP > $WP_FOLDER/$MYSQL_WP.sql;
-
-	rsync -avz --exclude=$BACKUP_ROOT_DIR/../syncExclude.txt $HTML_ROOT/ $WP_FOLDER/html;
-	rsync -avz $HTML_ROOT/bookkeeping $BK_FOLDER/html;
-	rsync -avz $HTML_ROOT/../BookKeepingCore $BK_FOLDER/html;
-#        echo ziping  $BACKUP_ROOT_DIR/$BACKUP_FILE to $BACKUP_FOLDER/;
-	tar czf $BACKUP_ROOT_DIR/$BACKUP_FILE $BACKUP_FOLDER/;
-	rm -rf $BACKUP_FOLDER;
-fi
-
-TODAY_DAY=`date "+%d"`;
-if [ "$TODAY_DAY" == "01" ]
-then
-#	echo ' removing the file from last month';
-	LAST_DAY_FILE=`ls -rt $BACKUP_ROOT_DIR/*.tar.gz | head -1`
-#	echo ' archiving file: '$LAST_DAY_FILE;
-	if [ -f "$LAST_DAY_FILE" ]
-	then
-#		echo 'mv $LAST_DAY_FILE  $BACKUP_ROOT_DIR/archived/';
-		mv $LAST_DAY_FILE  $BACKUP_ROOT_DIR/archived/
+#function to create a tmp backup folder
+createBackupFile() {
+	local backup_folder=$1;
+	if [ ! -d $backup_folder ] ; then
+		mkdir $backup_folder;	
 	fi
-	#LAST_MTH=`date -d "1 month ago" +%Y-%m-`
-	#rm -f $BACKUP_ROOT_DIR/$LAST_MTH*.tar.gz
-	rm -f $BACKUP_ROOT_DIR/*.tar.gz
-fi
+	return 0;
+}
 
-MD5_DIR=~/backup/md5;
-echo Gen md5 of files to $MD5_DIR;
-find $HTML_ROOT -type f -print0 | xargs -0 md5sum > $MD5_DIR/$FOLDER_NAME.md5
+#creating a backup folder
+createBackupFile $BACKUP_FOLER;
