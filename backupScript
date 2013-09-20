@@ -38,7 +38,7 @@ dumpDB() {
 	local mysql_file=$4;
 	echo;
 	echo === Dumping the database;
-	echo ' >>>'mysqldump -u$mysql_user -p$mysql_pass $mysql_db > $mysql_file;
+	echo ' >>>'mysqldump -u$mysql_user -p$mysql_pass $mysql_db '>' $mysql_file;
 	mysqldump -u$mysql_user -p$mysql_pass $mysql_db > $mysql_file;
 	echo == DONE;
 	return 0;
