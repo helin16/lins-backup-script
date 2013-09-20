@@ -1,0 +1,25 @@
+#!/bin/bash
+# backup script
+FOLDER_NAME=$1;
+HTML_ROOT=~/public_html;
+BACKUP_ROOT_DIR=~/backup/files;
+BACKUP_FOLDER=$BACKUP_ROOT_DIR/$FOLDER_NAME;
+BACKUP_FILE=$FOLDER_NAME.tar.gz;
+MYSQL_USER="mylinsco";
+MYSQL_PASS="i1008323I!";
+MYSQL_BK="mylinsco_bookkeep";
+
+echo 'backuping files and DBs';
+if [ ! -f "$BACKUP_FILE" ] ; then
+	echo mkdir $BACKUP_FOLDER;
+	mkdir $BACKUP_FOLDER;   
+	BK_FOLDER=$BACKUP_FOLDER/bk;
+	mkdir $BK_FOLDER;
+	mysqldump -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_BK > $BK_FOLDER/$MYSQL_BK.sql;
+	rm -rf $HTML_ROOT/bookkeeping/files/;
+	rsync -az $HTML_ROOT/bookkeeping $BK_FOLDER/html;
+	rsync -az $HTML_ROOT/../BookKeepingCore $BK_FOLDER/html;
+        echo ziping $BACKUP_ROOT_DIR/$BACKUP_FILE to $BACKUP_FOLDER/;
+	tar czf $BACKUP_ROOT_DIR/$BACKUP_FILE $BACKUP_FOLDER/;
+	rm -rf $BACKUP_FOLDER;
+fi
