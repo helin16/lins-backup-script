@@ -3,5 +3,22 @@
 
 #getting the current directory
 BASEDIR=$(dirname $0);
-CONF_FILE=$BASEDIR/backupConf/conf;
-
+CONF_FILES=$BASEDIR/conf/*.conf;
+for f in $CONF_FILES
+do
+	echo ; echo; echo;
+	echo "-- -------------------------------------------------------------------------";
+	echo "-- Processing $f file: -----------------------------------------------------";
+	echo "-- -------------------------------------------------------------------------";
+	if [ ! -f $f ]; then #check the config file
+        	echo 'No conf file found: '$f;
+	        exit 1;
+	else
+	        . $f;
+	fi
+	#echo =$NAME= =$SRC_DIR= =$DB_USER= =$DB_PASS= =$DB_DB= =$EXCLUDES=;
+	$BASEDIR/backupRunner "$SRC_DIR" "$NAME" "$DB_USER" "$DB_PASS" "$DB_DB" "$EXCLUDES";
+	echo "-- -------------------------------------------------------------------------";
+	echo "-- End of $f ---------------------------------------------------------------";
+	echo "-- -------------------------------------------------------------------------";
+done

@@ -8,14 +8,15 @@ TAR_BALL_PREFIX=$2;
 MYSQL_USER=$3;
 MYSQL_PASS=$4;
 MYSQL_DB=$5;
+EXCLUDES=$6;
 EXPIRY_DAYS=60; # HOW many days we keep the backup files
 TODAY=`date +%Y-%m-%d`;
 BACKUP_FOLER=$BASEDIR/$TODAY;
 
 #usage hint
 usage(){
-	echo "Usage: $0 FOLDER_YOU_WANT_TO_BACKUP TAR_BALL_PREFIX MYSQL_USER MYSQL_PASS MYSQL_DB"
-	exit 1
+	echo "Usage: $0 FOLDER_YOU_WANT_TO_BACKUP TAR_BALL_PREFIX MYSQL_USER MYSQL_PASS MYSQL_DB EXCLUDES";
+	exit 1;
 }
 
 #function to create a tmp backup folder
@@ -49,12 +50,18 @@ ryncFiles() {
 	local src_dir=$1;
 	local target_dir=$2;
 	echo;
-        echo === Dumping the database;
-	local command='rsync -avz';
-	if [ ! -z "$3" ]; then 
-		command+=' --exclude='$3;
+        echo === Backup the files:;
+	#local command='rsync -avzq';
+	#tar czf test.tar.gz ~/public_html/bookkeeping/ --exclude-vcs --exclude="/home5/mylinsco/public_html/bookkeeping/assets/*"
+	local command='tar czf '$target_dir'/files.tar.gz '$src_dir'/ --exclude-vcs '
+	if [ ! -z "$3" ]; then
+		local str=$3;
+		local excludes=(${str//;/ });
+		for i in "${!excludes[@]}"; do
+			command+=' --exclude="'$src_dir/${excludes[i]}'"';
+		done
 	fi
-	command+=' '$src_dir'/ '$target_dir'/';
+	#command+=' '$src_dir'/ '$target_dir'/';
         echo ' >>>'$command;
 	$command;
         echo == DONE;
@@ -74,7 +81,8 @@ createTarBall() {
 
 	#deleting files that are more than 60 days
         echo ' >>>Deleting tarballs older than: '$EXPIRY_DAYS' days';
-        echo ' >>>'find r -name \*.tar.gz -mtime +$EXPIRY_DAYS -type f -delete;
+        echo ' >>>'find $tarbll_folder -name \*.tar.gz -mtime +$EXPIRY_DAYS -type f -delete;
+	find $tarbll_folder -name \*.tar.gz -mtime +$EXPIRY_DAYS -type f -delete;
 	echo === DONE;
 	return 0;
 }
@@ -120,13 +128,13 @@ mkMD5() {
 }
 
 #checking usage
-[[ ! $# -eq 5 ]] && usage;
+[[ ! $# -eq 6 ]] && usage;
 #start
 startUp;
 #backup the database
 dumpDB $MYSQL_DB $MYSQL_USER $MYSQL_PASS $BACKUP_FOLER/$TAR_BALL_PREFIX/db.sql;
 #backup the files
-ryncFiles $SRC_DIR $BACKUP_FOLER/$TAR_BALL_PREFIX/;
+ryncFiles $SRC_DIR $BACKUP_FOLER/$TAR_BALL_PREFIX/ "$EXCLUDES";
 #creating the tarball
 createTarBall $BACKUP_FOLER $BACKUP_FILE;
 #clear up all tmp files/folders
