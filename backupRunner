@@ -24,7 +24,7 @@ createFolder() {
 	local backup_folder=$1;
 	if [ ! -d $backup_folder ] ; then
 		echo '  >>>'Making a folder: $backup_folder ...;
-		echo '  >>>'mkdir $backup_folder;
+		#echo '  >>>'mkdir $backup_folder;
 		mkdir $backup_folder;
 		echo '  >>>'DONE;
 	fi
@@ -39,7 +39,7 @@ dumpDB() {
 	local mysql_file=$4;
 	echo;
 	echo === Dumping the database;
-	echo ' >>>'mysqldump -u$mysql_user -p$mysql_pass $mysql_db '>' $mysql_file;
+	#echo ' >>>'mysqldump -u$mysql_user -p$mysql_pass $mysql_db '>' $mysql_file;
 	mysqldump -u$mysql_user -p$mysql_pass $mysql_db > $mysql_file;
 	echo == DONE;
 	return 0;
@@ -62,7 +62,7 @@ ryncFiles() {
 		done
 	fi
 	#command+=' '$src_dir'/ '$target_dir'/';
-        echo ' >>>'$command;
+        #echo ' >>>'$command;
 	$command;
         echo == DONE;
         return 0;
@@ -76,7 +76,7 @@ createTarBall() {
 	echo;
 	echo === Creating a new tarball from $folder to $tarball ... ;
 	createFolder $(dirname $tarball);
-	echo ' >>>'tar czf $tarball $folder/;
+	#echo ' >>>'tar czf $tarball $folder/;
 	tar czf $tarball $folder/;
 
 	#deleting files that are more than 60 days
@@ -118,7 +118,7 @@ mkMD5() {
 	createFolder $md5_folder;
 	#generating
 	echo ' >>>Generating the md5:';
-	echo ' >>>find '$SRC_DIR -type f -print0 '| xargs -0 md5sum >' $md5_folder/$TAR_BALL_PREFIX-$TODAY.md5
+	#echo ' >>>find '$SRC_DIR -type f -print0 '| xargs -0 md5sum >' $md5_folder/$TAR_BALL_PREFIX-$TODAY.md5
 	find $SRC_DIR -type f -print0 | xargs -0 md5sum > $md5_folder/$TAR_BALL_PREFIX-$TODAY.md5;
 
 	#deleting files that are more than 60 days
